@@ -1,5 +1,6 @@
 package de.steffektif.aoc2023.day01
 
+import de.steffektif.aoc2023.loadFile
 import java.io.File
 import java.util.*
 
@@ -15,7 +16,7 @@ fun main(args: Array<String>) {
 
 fun solveA(): Int {
     var sum = 0
-    loadInput().forEachLine { string ->
+    loadFile("src/main/kotlin/de/steffektif/aoc2023/day01/input").forEachLine { string ->
         val digits = string.filter { it.isDigit() }
         sum += (digits.first().toString() + digits.last().toString()).toInt()
     }
@@ -24,7 +25,7 @@ fun solveA(): Int {
 
 fun solveB(): Int {
     var sum = 0
-    loadInput().forEachLine { string ->
+    loadFile("src/main/kotlin/de/steffektif/aoc2023/day01/input").forEachLine { string ->
 
         val lastDigitIndex = string.indexOfLast { it.isDigit() }
         val firstDigitIndex = string.indexOfFirst { it.isDigit() }
@@ -51,9 +52,6 @@ fun solveB(): Int {
     return sum
 }
 
-fun loadInput(): File {
-    return File("src/main/kotlin/de/steffektif/aoc2023/day01/input")
-}
 
 // returns a sorted set of pairs holding the start-index of the finding and the finding as word
 fun checkForNumberWord(string: String): SortedSet<Pair<Int, String>> {
