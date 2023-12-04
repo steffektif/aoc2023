@@ -10,53 +10,27 @@ val isNumber: (String) -> Boolean = { str: String -> "[0-9]".toRegex().matches(s
 val isDot: (String) -> Boolean = { str: String -> str == "." }
 val isSymbol: (String) -> Boolean = { str: String -> !(str == "." || isNumber(str)) }
 
-val isBottomSymbol: (Pair<Int, Int>) -> Boolean =
-    { coordinates ->
-        val target = schematic["${coordinates.first}-${coordinates.second + 1}"]
-        target != null && isSymbol(target)
-    }
 
-val isTopSymbol: (Pair<Int, Int>) -> Boolean =
-    { coordinates ->
-        val target = schematic["${coordinates.first}-${coordinates.second - 1}"]
-        target != null && isSymbol(target)
-    }
+val checkForSymbol: (Pair<Int, Int>, Int, Int) -> Boolean = { coordinates, plusX, plusY ->
+    val target = schematic["${coordinates.first + plusX}-${coordinates.second + plusY}"]
+    target != null && isSymbol(target)
+}
 
-val isRightSymbol: (Pair<Int, Int>) -> Boolean =
-    { coordinates ->
-        val target = schematic["${coordinates.first + 1}-${coordinates.second}"]
-        target != null && isSymbol(target)
-    }
+val isBottomSymbol: (Pair<Int, Int>) -> Boolean = { checkForSymbol(it, 0, 1) }
 
-val isLeftSymbol: (Pair<Int, Int>) -> Boolean =
-    { coordinates ->
-        val target = schematic["${coordinates.first - 1}-${coordinates.second}"]
-        target != null && isSymbol(target)
-    }
+val isTopSymbol: (Pair<Int, Int>) -> Boolean = { checkForSymbol(it, 0, -1) }
 
-val isTopLeftSymbol: (Pair<Int, Int>) -> Boolean =
-    { coordinates ->
-        val target = schematic["${coordinates.first - 1}-${coordinates.second - 1}"]
-        target != null && isSymbol(target)
-    }
+val isRightSymbol: (Pair<Int, Int>) -> Boolean = { checkForSymbol(it, 1, 0) }
 
-val isTopRightSymbol: (Pair<Int, Int>) -> Boolean =
-    { coordinates ->
-        val target = schematic["${coordinates.first + 1}-${coordinates.second - 1}"]
-        target != null && isSymbol(target)
-    }
+val isLeftSymbol: (Pair<Int, Int>) -> Boolean = { checkForSymbol(it, -1, 0) }
 
-val isBottomLeftSymbol: (Pair<Int, Int>) -> Boolean =
-    { coordinates ->
-        val target = schematic["${coordinates.first - 1}-${coordinates.second + 1}"]
-        target != null && isSymbol(target)
-    }
+val isTopLeftSymbol: (Pair<Int, Int>) -> Boolean = { checkForSymbol(it, -1, -1) }
 
-val isBottomRightSymbol: (Pair<Int, Int>) -> Boolean =
-    { coordinates ->
-        val target = schematic["${coordinates.first + 1}-${coordinates.second + 1}"]
-        target != null && isSymbol(target)
-    }
+val isTopRightSymbol: (Pair<Int, Int>) -> Boolean = { checkForSymbol(it, 1, -1) }
+
+val isBottomLeftSymbol: (Pair<Int, Int>) -> Boolean = { checkForSymbol(it, -1, 1) }
+
+val isBottomRightSymbol: (Pair<Int, Int>) -> Boolean = { checkForSymbol(it, 1, 1) }
 
 val checks = listOf(
     isTopLeftSymbol,
