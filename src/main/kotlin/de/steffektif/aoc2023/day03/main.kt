@@ -9,12 +9,35 @@ var yBoundary = 0
 val isNumber: (String) -> Boolean = { str: String -> "[0-9]".toRegex().matches(str) }
 val isDot: (String) -> Boolean = { str: String -> str == "." }
 val isSymbol: (String) -> Boolean = { str: String -> !(str == "." || isNumber(str)) }
+val isGear: (String) -> Boolean = { str: String -> str == "*" }
 
 
 val checkForSymbol: (Pair<Int, Int>, Int, Int) -> Boolean = { coordinates, plusX, plusY ->
     val target = schematic["${coordinates.first + plusX}-${coordinates.second + plusY}"]
     target != null && isSymbol(target)
 }
+
+val checkForNumber: (Pair<Int, Int>, Int, Int) -> Pair<Int, Int>? = { coordinates, plusX, plusY ->
+    val target = schematic["${coordinates.first + plusX}-${coordinates.second + plusY}"]
+    if (target != null && isNumber(target)) Pair(coordinates.first + plusX, coordinates.second + plusY) else null
+}
+
+val isBottomNumber: (Pair<Int, Int>) -> Pair<Int, Int>? = { checkForNumber(it, 0, 1) }
+
+val isTopNumber: (Pair<Int, Int>) -> Pair<Int, Int>? = { checkForNumber(it, 0, -1) }
+
+val isRightNumber: (Pair<Int, Int>) -> Pair<Int, Int>? = { checkForNumber(it, 1, 0) }
+
+val isLeftNumber: (Pair<Int, Int>) -> Pair<Int, Int>? = { checkForNumber(it, -1, 0) }
+
+val isTopLeftNumber: (Pair<Int, Int>) -> Pair<Int, Int>? = { checkForNumber(it, -1, -1) }
+
+val isTopRightNumber: (Pair<Int, Int>) -> Pair<Int, Int>? = { checkForNumber(it, 1, -1) }
+
+val isBottomLeftNumber: (Pair<Int, Int>) -> Pair<Int, Int>? = { checkForNumber(it, -1, 1) }
+
+val isBottomRightNumber: (Pair<Int, Int>) -> Pair<Int, Int>? = { checkForNumber(it, 1, 1) }
+
 
 val isBottomSymbol: (Pair<Int, Int>) -> Boolean = { checkForSymbol(it, 0, 1) }
 
@@ -32,7 +55,18 @@ val isBottomLeftSymbol: (Pair<Int, Int>) -> Boolean = { checkForSymbol(it, -1, 1
 
 val isBottomRightSymbol: (Pair<Int, Int>) -> Boolean = { checkForSymbol(it, 1, 1) }
 
-val checks = listOf(
+val numberChecks = listOf(
+    isTopLeftNumber,
+    isTopNumber,
+    isTopRightNumber,
+    isLeftNumber,
+    isRightNumber,
+    isBottomLeftNumber,
+    isBottomNumber,
+    isBottomRightNumber
+)
+
+val symbolChecks = listOf(
     isTopLeftSymbol,
     isTopSymbol,
     isTopRightSymbol,
@@ -43,9 +77,15 @@ val checks = listOf(
     isBottomRightSymbol
 )
 
-var numbers = mutableListOf<Number>()
 
-data class Number(val number: String, val start: Pair<Int, Int>, val end: Pair<Int, Int>)
+data class Number(
+    val number: String,
+    val start: Pair<Int, Int>,
+    val end: Pair<Int, Int>,
+)
+
+
+val coordsMap = mutableMapOf<String, Int>()
 
 fun main() {
     buildEngineSchematic()
@@ -53,33 +93,33 @@ fun main() {
     println("result day 3 b: ${solveB()}")
 }
 
-
-fun solveA(): Int {
+fun solveB(): Int {
     var sum = 0
-    val latest = mutableListOf<String>()
-    val latestIndecies = mutableListOf<Pair<Int, Int>>()
+    findNumbers()
     for (x in 0..xBoundary) {
         for (y in 0..yBoundary) {
             val content = schematic["$y-$x"]
-            if (isNumber(content!!)) {
-                latest.add(content)
-                latestIndecies.add(Pair(y, x))
-            }
-            if (isDot(content) || isSymbol(content)) {
-                if (latest.isNotEmpty() && latestIndecies.isNotEmpty()) {
-                    numbers.add(
-                        Number(
-                            latest.joinToString(""),
-                            latestIndecies[0],
-                            latestIndecies[latestIndecies.lastIndex]
-                        )
-                    )
+            if (isGear(content!!)) {
+                val neighbourNumbers = numberChecks.mapNotNull { it(Pair(x, y)) }
+                if (neighbourNumbers.size == 2) {
+                    // we found 2 numbers
+                    val first = neighbourNumbers[0]
+                    val second = neighbourNumbers[1]
+
+                    val firstNumber = coordsMap["${first.second}-${first.first}"]
+                    val secondNumber = coordsMap["${second.second}-${second.first}"]
+                    sum += firstNumber!! * secondNumber!!
                 }
-                latest.clear()
-                latestIndecies.clear()
+
             }
         }
     }
+    return sum
+}
+
+fun solveA(): Int {
+    var sum = 0
+    val numbers = findNumbers()
 
     numbers.forEach {
         val valid = isValid(it)
@@ -92,6 +132,39 @@ fun solveA(): Int {
     return sum
 }
 
+private fun findNumbers(): MutableList<Number> {
+    val numbers = mutableListOf<Number>()
+    val latest = mutableListOf<String>()
+    val latestIndices = mutableListOf<Pair<Int, Int>>()
+    for (x in 0..xBoundary) {
+        for (y in 0..yBoundary) {
+            val content = schematic["$y-$x"]
+            if (isNumber(content!!)) {
+                latest.add(content)
+                latestIndices.add(Pair(y, x))
+            }
+            if (isDot(content) || isSymbol(content)) {
+                if (latest.isNotEmpty() && latestIndices.isNotEmpty()) {
+                    numbers.add(
+                        Number(
+                            latest.joinToString(""),
+                            latestIndices[0],
+                            latestIndices[latestIndices.lastIndex],
+                        )
+                    )
+                    for (index in latestIndices) {
+                        coordsMap["$x-${index.first}"] = latest.joinToString("").toInt()
+                    }
+                }
+
+                latest.clear()
+                latestIndices.clear()
+            }
+        }
+    }
+    return numbers
+}
+
 // at least one surrounding is a symbol
 private fun isValid(number: Number): Boolean {
     val start = number.start.first
@@ -99,7 +172,7 @@ private fun isValid(number: Number): Boolean {
     val line = number.start.second
 
     for (i in start..end) {
-        if (checks.map { it(Pair(i, line)) }.any { it }) {
+        if (symbolChecks.map { it(Pair(i, line)) }.any { it }) {
             return true
         }
     }
@@ -117,10 +190,6 @@ private fun debugContent(y: Int, x: Int, content: String?) {
     )
 }
 
-fun solveB(): Int {
-    var sum = 0
-    return sum
-}
 
 fun buildEngineSchematic() {
     var linenumber = 0
